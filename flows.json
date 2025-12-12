@@ -1,0 +1,324 @@
+[
+    {
+        "id": "d542a8ef1fe23ed5",
+        "type": "tab",
+        "label": "Penibilite ESP32",
+        "disabled": false,
+        "info": ""
+    },
+    {
+        "id": "de0c32d268a8b402",
+        "type": "mqtt in",
+        "z": "d542a8ef1fe23ed5",
+        "name": "ECG data",
+        "topic": "penibilite/ecg/data",
+        "qos": "0",
+        "datatype": "auto",
+        "broker": "mqtt-broker-penibilite",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 120,
+        "y": 80,
+        "wires": [
+            [
+                "624983f31b868941",
+                "adf8896f68555d8b"
+            ]
+        ]
+    },
+    {
+        "id": "624983f31b868941",
+        "type": "json",
+        "z": "d542a8ef1fe23ed5",
+        "name": "Parse ECG JSON",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 320,
+        "y": 80,
+        "wires": [
+            [
+                "5c9667cd49969e2b"
+            ]
+        ]
+    },
+    {
+        "id": "5c9667cd49969e2b",
+        "type": "function",
+        "z": "d542a8ef1fe23ed5",
+        "name": "ECG fields",
+        "func": "msg.ecg = msg.payload.ecg;\nmsg.status = msg.payload.status;\nmsg.payload = msg.ecg;\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 520,
+        "y": 80,
+        "wires": [
+            [
+                "e8da827b661d649b"
+            ]
+        ]
+    },
+    {
+        "id": "e8da827b661d649b",
+        "type": "ui_chart",
+        "z": "d542a8ef1fe23ed5",
+        "name": "ECG brut",
+        "group": "ui-group-main",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "label": "ECG brut",
+        "chartType": "line",
+        "legend": "false",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "",
+        "dot": false,
+        "ymin": "0",
+        "ymax": "4095",
+        "removeOlder": 60,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "60",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#ff0000",
+            "#aec7e8",
+            "#ff7f0e"
+        ],
+        "outputs": 1,
+        "x": 760,
+        "y": 80,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "adf8896f68555d8b",
+        "type": "debug",
+        "z": "d542a8ef1fe23ed5",
+        "name": "ECG JSON",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 320,
+        "y": 130,
+        "wires": []
+    },
+    {
+        "id": "2b436a11da64237b",
+        "type": "mqtt in",
+        "z": "d542a8ef1fe23ed5",
+        "name": "Movement data",
+        "topic": "penibilite/movement/data",
+        "qos": "0",
+        "datatype": "auto",
+        "broker": "mqtt-broker-penibilite",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 130,
+        "y": 220,
+        "wires": [
+            [
+                "c25510b54c0d6151",
+                "399a643ad7b30c44"
+            ]
+        ]
+    },
+    {
+        "id": "c25510b54c0d6151",
+        "type": "json",
+        "z": "d542a8ef1fe23ed5",
+        "name": "Parse move JSON",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 330,
+        "y": 220,
+        "wires": [
+            [
+                "2106072edd9a73e4"
+            ]
+        ]
+    },
+    {
+        "id": "2106072edd9a73e4",
+        "type": "function",
+        "z": "d542a8ef1fe23ed5",
+        "name": "Counts per gesture",
+        "func": "// payload attendu: {\"gesture\":\"updown|leftright|none\",\"reps\":N}\nvar g = (msg.payload.gesture || \"\").toLowerCase();\n\nvar counts = context.get('counts') || { updown: 0, leftright: 0 };\n\nif (g === \"updown\") {\n    counts.updown += 1;\n}\nelse if (g === \"leftright\") {\n    counts.leftright += 1;\n}\n\ncontext.set('counts', counts);\n\nvar msgUp   = { topic: \"updown\",   payload: counts.updown };\nvar msgLeft = { topic: \"leftright\", payload: counts.leftright };\n\nreturn [msgUp, msgLeft];",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 570,
+        "y": 220,
+        "wires": [
+            [
+                "b37ca15be90b4baf",
+                "63753478de1c6f10"
+            ],
+            [
+                "42cf8f123e5af742",
+                "9a2d1f2090b39591"
+            ]
+        ]
+    },
+    {
+        "id": "b37ca15be90b4baf",
+        "type": "ui_text",
+        "z": "d542a8ef1fe23ed5",
+        "group": "ui-group-main",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "name": "Reps UpDown",
+        "label": "Reps verticaux (updown)",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 840,
+        "y": 190,
+        "wires": []
+    },
+    {
+        "id": "63753478de1c6f10",
+        "type": "ui_gauge",
+        "z": "d542a8ef1fe23ed5",
+        "name": "Gauge UpDown",
+        "group": "ui-group-main",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "gtype": "donut",
+        "title": "UpDown",
+        "label": "reps",
+        "format": "{{msg.payload}}",
+        "min": 0,
+        "max": 100,
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "x": 850,
+        "y": 230,
+        "wires": []
+    },
+    {
+        "id": "42cf8f123e5af742",
+        "type": "ui_text",
+        "z": "d542a8ef1fe23ed5",
+        "group": "ui-group-main",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "name": "Reps LeftRight",
+        "label": "Reps horizontaux (leftright)",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 870,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "9a2d1f2090b39591",
+        "type": "ui_gauge",
+        "z": "d542a8ef1fe23ed5",
+        "name": "Gauge LeftRight",
+        "group": "ui-group-main",
+        "order": 5,
+        "width": 0,
+        "height": 0,
+        "gtype": "donut",
+        "title": "LeftRight",
+        "label": "reps",
+        "format": "{{msg.payload}}",
+        "min": 0,
+        "max": 100,
+        "colors": [
+            "#0077ff",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "x": 880,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "399a643ad7b30c44",
+        "type": "debug",
+        "z": "d542a8ef1fe23ed5",
+        "name": "Movement JSON",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 340,
+        "y": 270,
+        "wires": []
+    },
+    {
+        "id": "mqtt-broker-penibilite",
+        "type": "mqtt-broker",
+        "name": "Raspberry MQTT",
+        "broker": "172.18.32.48",
+        "port": "1883",
+        "clientid": "nodered_penibilite",
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": ""
+    },
+    {
+        "id": "ui-group-main",
+        "type": "ui_group",
+        "name": "Penibilite",
+        "tab": "ui-tab-main",
+        "order": 1,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "ui-tab-main",
+        "type": "ui_tab",
+        "name": "Surveillance",
+        "icon": "dashboard",
+        "order": 1
+    },
+    {
+        "id": "eb2dc70b073f33f1",
+        "type": "global-config",
+        "env": [],
+        "modules": {
+            "node-red-dashboard": "3.6.6"
+        }
+    }
+]
