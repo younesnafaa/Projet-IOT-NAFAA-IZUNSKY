@@ -3,8 +3,8 @@
 #include <PubSubClient.h>
 
 // ====================== CONFIG WIFI / MQTT ======================
-const char *WIFI_SSID     = "pi";          // SSID WiFi
-const char *WIFI_PASSWORD = "raspberry";     // Mot de passe WiFi
+const char *WIFI_SSID     = "iot";   
+const char *WIFI_PASSWORD = "iotisis;";     
 const char *MQTT_HOST     = "172.18.32.48"; // IP du Raspberry (broker MQTT)
 const uint16_t MQTT_PORT  = 1883;
 
@@ -13,10 +13,10 @@ const char *TOPIC_ECG_DATA = "penibilite/ecg/data";
 const char *TOPIC_ECG_CMD  = "penibilite/ecg/cmd";
 
 // ====================== CONFIG CAPTEUR ECG ======================
-const int PIN_ECG_SIGNAL = 15;  // Sortie analogique AD8232
-const int PIN_ECG_LOP    = 10;  // LO+ (Lead-Off +)
-const int PIN_ECG_LOM    = 9;  // LO- (Lead-Off -)
-const int PIN_STATUS_LED = 2;   // LED on-board
+const int PIN_ECG_SIGNAL = 15;  // AD8232
+const int PIN_ECG_LOP    = 10;  // LO+ 
+const int PIN_ECG_LOM    = 9;  // LO-
+const int PIN_STATUS_LED = 2;   // LED
 
 // ====================== OBJETS RESEAU ===========================
 WiFiClient   wifiClient;

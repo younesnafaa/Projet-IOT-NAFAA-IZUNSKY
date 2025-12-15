@@ -8,9 +8,9 @@
 #include <younesnafaa-project-1_inferencing.h>  // lib TinyML
 
 // ===== WIFI / MQTT =====
-const char *WIFI_SSID     = "pi";            // A ADAPTER
-const char *WIFI_PASSWORD = "raspberry";     // A ADAPTER
-const char *MQTT_HOST     = "172.18.32.48";  // IP du Raspberry A ADAPTER
+const char *WIFI_SSID     = "iot";            
+const char *WIFI_PASSWORD = "iotisis;";     
+const char *MQTT_HOST     = "172.18.32.48";  // IP du Raspberry 
 const uint16_t MQTT_PORT  = 1883;
 
 const char *MQTT_CLIENT_ID    = "ESP32_MPU_TINYML";
@@ -18,6 +18,8 @@ const char *TOPIC_MOVEMENT    = "penibilite/movement/data";
 const char *TOPIC_MOVEMENT_CT = "penibilite/movement/count";
 
 // ===== MPU6050 =====
+#define I2C_SDA 21
+#define I2C_SCL 22
 Adafruit_MPU6050 mpu;
 
 // Buffer d'entrée du modèle Edge Impulse
@@ -36,8 +38,15 @@ bool  windowFull  = false;
 unsigned long lastClassifTime        = 0;
 const unsigned long CLASSIF_PERIOD_MS = 500;
 
-int  repCount = 0;
-bool inRep    = false;
+// Compteurs par geste (max 10 gestes différents)
+struct GestureCounter {
+  String name;
+  int count;
+};
+GestureCounter gestureCounts[10];
+int gestureCountSize = 0;
+
+String lastGesture = "None";
 
 // ===== Réseau =====
 WiFiClient   wifiClient;
@@ -49,7 +58,7 @@ void connectWifi();
 void connectMqtt();
 void acquireSample();
 String classifyWindow();
-void publishMovement(const String &gesture, int reps);
+void publishMovement(const String &gesture);
 static int raw_feature_get_data(size_t offset, size_t length, float *out_ptr);
 
 // ================== SETUP ==================
@@ -58,25 +67,31 @@ void setup() {
   delay(500);
   Serial.println("\n=== ESP32 MPU6050 + TinyML + MQTT ===");
 
-  // MPU6050
-  Wire.begin();
-  if (!mpu.begin()) {
-    Serial.println("ERREUR: MPU6050 non detecte !");
-    while (true) {
-      delay(500);
-      Serial.println("MPU6050 absent...");
-    }
-  }
-  Serial.println("MPU6050 initialise.");
-  mpu.setAccelerometerRange(MPU6050_RANGE_4_G);
-  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
-  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
-
   // WiFi + MQTT
   connectWifi();
   mqttClient.setServer(MQTT_HOST, MQTT_PORT);
   connectMqtt();
 
+  // Initialisation I2C
+  Wire.begin(I2C_SDA, I2C_SCL);
+  
+  // Initialisation MPU6050 avec adresse I2C explicite
+  if (!mpu.begin(0x68)) {
+    Serial.println("ERREUR: MPU6050 non detecte!");
+    Serial.println("Verifiez les connexions I2C (SDA=21, SCL=22)");
+    while (1) {
+      delay(10);
+    }
+  }
+  
+  Serial.println("MPU6050 connecte avec succes");
+  
+  // Configuration du MPU6050
+  mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
+  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
+  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+  
+  Serial.print("Accelerometer range set to: +-8G\n");
   Serial.print("EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE = ");
   Serial.println(EI_CLASSIFIER_DSP_INPUT_FRAME_SIZE);
   Serial.print("WINDOW_SIZE = ");
@@ -137,19 +152,34 @@ void loop() {
   Serial.print("Geste detecte : ");
   Serial.println(gesture);
 
-  // logique reps : on compte une rep quand on sort d'un geste vers "none"
+  // Logique : on incrémente +1 à chaque acquisition d'un geste (sauf "none")
   if (!gesture.equalsIgnoreCase("none")) {
-    inRep = true;
-  } else {
-    if (inRep) {
-      repCount++;
-      inRep = false;
-      Serial.print("Repetition ++ => ");
-      Serial.println(repCount);
+    // Trouver ou créer le compteur pour ce geste
+    int idx = -1;
+    for (int i = 0; i < gestureCountSize; i++) {
+      if (gestureCounts[i].name.equalsIgnoreCase(gesture)) {
+        idx = i;
+        break;
+      }
+    }
+    
+    if (idx == -1 && gestureCountSize < 10) {
+      // Nouveau geste, créer un compteur
+      idx = gestureCountSize;
+      gestureCounts[idx].name = gesture;
+      gestureCounts[idx].count = 0;
+      gestureCountSize++;
+    }
+    
+    if (idx != -1) {
+      gestureCounts[idx].count++;
+      Serial.print("Compteur [" + gesture + "] => ");
+      Serial.println(gestureCounts[idx].count);
     }
   }
-
-  publishMovement(gesture, repCount);
+  
+  lastGesture = gesture;
+  publishMovement(gesture);
 }
 
 // ================== ACQUISITION MPU ==================
@@ -188,10 +218,7 @@ String classifyWindow() {
 
   ei_impulse_result_t result = { 0 };
 
-  // Essaie d'abord cette version :
   EI_IMPULSE_ERROR res = run_classifier(&signal, &result, false);
-  // Si compilation KO, commente la ligne au-dessus et décommente celle-ci :
-  // EI_IMPULSE_ERROR res = run_classifier(&signal, &result, false, false);
 
   if (res != EI_IMPULSE_OK) {
     Serial.print("run_classifier ERROR: ");
@@ -222,17 +249,30 @@ static int raw_feature_get_data(size_t offset, size_t length, float *out_ptr) {
 }
 
 // ================== MQTT PUBLISH ==================
-void publishMovement(const String &gesture, int reps) {
-  snprintf(payload, sizeof(payload),
-           "{\"gesture\":\"%s\",\"reps\":%d}",
-           gesture.c_str(), reps);
+void publishMovement(const String &gesture) {
+  // Construire le JSON avec tous les compteurs
+  String jsonPayload = "{\"gesture\":\"" + gesture + "\",\"counters\":{";
+  
+  for (int i = 0; i < gestureCountSize; i++) {
+    if (i > 0) jsonPayload += ",";
+    jsonPayload += "\"" + gestureCounts[i].name + "\":" + String(gestureCounts[i].count);
+  }
+  jsonPayload += "}}";
+  
+  mqttClient.publish(TOPIC_MOVEMENT, jsonPayload.c_str());
 
-  mqttClient.publish(TOPIC_MOVEMENT, payload);
-
-  char buf[16];
-  snprintf(buf, sizeof(buf), "%d", reps);
-  mqttClient.publish(TOPIC_MOVEMENT_CT, buf);
+  // Publier aussi le compteur du geste actuel
+  if (!gesture.equalsIgnoreCase("none")) {
+    for (int i = 0; i < gestureCountSize; i++) {
+      if (gestureCounts[i].name.equalsIgnoreCase(gesture)) {
+        char buf[16];
+        snprintf(buf, sizeof(buf), "%d", gestureCounts[i].count);
+        mqttClient.publish(TOPIC_MOVEMENT_CT, buf);
+        break;
+      }
+    }
+  }
 
   Serial.print("MQTT -> ");
-  Serial.println(payload);
+  Serial.println(jsonPayload);
 }
