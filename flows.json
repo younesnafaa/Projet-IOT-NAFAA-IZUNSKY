@@ -1,15 +1,15 @@
 [
     {
-        "id": "d542a8ef1fe23ed5",
+        "id": "5afb1467026d4594",
         "type": "tab",
         "label": "Penibilite ESP32",
         "disabled": false,
         "info": ""
     },
     {
-        "id": "de0c32d268a8b402",
+        "id": "bd40959cdbbae8f0",
         "type": "mqtt in",
-        "z": "d542a8ef1fe23ed5",
+        "z": "5afb1467026d4594",
         "name": "ECG data",
         "topic": "penibilite/ecg/data",
         "qos": "0",
@@ -23,15 +23,15 @@
         "y": 80,
         "wires": [
             [
-                "624983f31b868941",
-                "adf8896f68555d8b"
+                "4817072bea30a46f",
+                "3cda4abeff8a5701"
             ]
         ]
     },
     {
-        "id": "624983f31b868941",
+        "id": "4817072bea30a46f",
         "type": "json",
-        "z": "d542a8ef1fe23ed5",
+        "z": "5afb1467026d4594",
         "name": "Parse ECG JSON",
         "property": "payload",
         "action": "",
@@ -40,14 +40,15 @@
         "y": 80,
         "wires": [
             [
-                "5c9667cd49969e2b"
+                "4f548129272776f2",
+                "e38a6e103b1671c6"
             ]
         ]
     },
     {
-        "id": "5c9667cd49969e2b",
+        "id": "4f548129272776f2",
         "type": "function",
-        "z": "d542a8ef1fe23ed5",
+        "z": "5afb1467026d4594",
         "name": "ECG fields",
         "func": "msg.ecg = msg.payload.ecg;\nmsg.status = msg.payload.status;\nmsg.payload = msg.ecg;\nreturn msg;",
         "outputs": 1,
@@ -56,23 +57,43 @@
         "finalize": "",
         "libs": [],
         "x": 520,
-        "y": 80,
+        "y": 60,
         "wires": [
             [
-                "e8da827b661d649b"
+                "ce91414a402bdfd8"
             ]
         ]
     },
     {
-        "id": "e8da827b661d649b",
+        "id": "e38a6e103b1671c6",
+        "type": "function",
+        "z": "5afb1467026d4594",
+        "name": "ECG alert logic",
+        "func": "var ecg = Number(msg.payload.ecg);\nvar status = msg.payload.status || \"\";\nvar HIGH_LIMIT = 3500;\nvar LOW_LIMIT  = 500;\nvar alert = null;\nif (status === \"electrodes_off\") {\n    alert = \"Electrodes ECG déconnectées\";\n}\nelse if (!isNaN(ecg)) {\n    if (ecg > HIGH_LIMIT) {\n        alert = \"ECG anormal: valeur très élevée (\" + ecg + \")\";\n    } else if (ecg < LOW_LIMIT) {\n        alert = \"ECG anormal: valeur très basse (\" + ecg + \")\";\n    }\n}\nif (alert) {\n    return { payload: alert };\n}\nreturn null;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 540,
+        "y": 110,
+        "wires": [
+            [
+                "0731e7fb9580b849",
+                "04946b442ddc187d"
+            ]
+        ]
+    },
+    {
+        "id": "ce91414a402bdfd8",
         "type": "ui_chart",
-        "z": "d542a8ef1fe23ed5",
+        "z": "5afb1467026d4594",
         "name": "ECG brut",
         "group": "ui-group-main",
         "order": 1,
         "width": 0,
         "height": 0,
-        "label": "ECG brut",
+        "label": "ECG brut (20 ms)",
         "chartType": "line",
         "legend": "false",
         "xformat": "HH:mm:ss",
@@ -81,9 +102,9 @@
         "dot": false,
         "ymin": "0",
         "ymax": "4095",
-        "removeOlder": 60,
+        "removeOlder": 10,
         "removeOlderPoints": "",
-        "removeOlderUnit": "60",
+        "removeOlderUnit": "1",
         "cutout": 0,
         "useOneColor": false,
         "useUTC": false,
@@ -93,16 +114,16 @@
             "#ff7f0e"
         ],
         "outputs": 1,
-        "x": 760,
-        "y": 80,
+        "x": 770,
+        "y": 60,
         "wires": [
             []
         ]
     },
     {
-        "id": "adf8896f68555d8b",
+        "id": "3cda4abeff8a5701",
         "type": "debug",
-        "z": "d542a8ef1fe23ed5",
+        "z": "5afb1467026d4594",
         "name": "ECG JSON",
         "active": false,
         "tosidebar": true,
@@ -110,14 +131,14 @@
         "tostatus": false,
         "complete": "payload",
         "targetType": "msg",
-        "x": 320,
+        "x": 330,
         "y": 130,
         "wires": []
     },
     {
-        "id": "2b436a11da64237b",
+        "id": "347648521c87ee1e",
         "type": "mqtt in",
-        "z": "d542a8ef1fe23ed5",
+        "z": "5afb1467026d4594",
         "name": "Movement data",
         "topic": "penibilite/movement/data",
         "qos": "0",
@@ -128,58 +149,119 @@
         "rh": 0,
         "inputs": 0,
         "x": 130,
-        "y": 220,
+        "y": 260,
         "wires": [
             [
-                "c25510b54c0d6151",
-                "399a643ad7b30c44"
+                "e8da8c642f8ad51e",
+                "81c138ec495ab429"
             ]
         ]
     },
     {
-        "id": "c25510b54c0d6151",
+        "id": "e8da8c642f8ad51e",
         "type": "json",
-        "z": "d542a8ef1fe23ed5",
+        "z": "5afb1467026d4594",
         "name": "Parse move JSON",
         "property": "payload",
         "action": "",
         "pretty": false,
         "x": 330,
-        "y": 220,
+        "y": 260,
         "wires": [
             [
-                "2106072edd9a73e4"
+                "214eca040bc1e078"
             ]
         ]
     },
     {
-        "id": "2106072edd9a73e4",
+        "id": "214eca040bc1e078",
         "type": "function",
-        "z": "d542a8ef1fe23ed5",
-        "name": "Counts per gesture",
-        "func": "// payload attendu: {\"gesture\":\"updown|leftright|none\",\"reps\":N}\nvar g = (msg.payload.gesture || \"\").toLowerCase();\n\nvar counts = context.get('counts') || { updown: 0, leftright: 0 };\n\nif (g === \"updown\") {\n    counts.updown += 1;\n}\nelse if (g === \"leftright\") {\n    counts.leftright += 1;\n}\n\ncontext.set('counts', counts);\n\nvar msgUp   = { topic: \"updown\",   payload: counts.updown };\nvar msgLeft = { topic: \"leftright\", payload: counts.leftright };\n\nreturn [msgUp, msgLeft];",
-        "outputs": 2,
+        "z": "5afb1467026d4594",
+        "name": "Extract counters per gesture",
+        "func": "var counters = msg.payload.counters || {};\nvar msgs = [];\nfor (var name in counters) {\n    if (!counters.hasOwnProperty(name)) continue;\n    var lower = name.toLowerCase();\n    if (lower === \"none\") continue;\n    msgs.push({\n        topic: lower,\n        gesture: lower,\n        payload: counters[name]\n    });\n}\nreturn [msgs];",
+        "outputs": 1,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 570,
-        "y": 220,
+        "x": 580,
+        "y": 260,
         "wires": [
             [
-                "b37ca15be90b4baf",
-                "63753478de1c6f10"
-            ],
-            [
-                "42cf8f123e5af742",
-                "9a2d1f2090b39591"
+                "c5ef17b61741fbcf",
+                "3c6fba7fc6c55af6"
             ]
         ]
     },
     {
-        "id": "b37ca15be90b4baf",
+        "id": "c5ef17b61741fbcf",
+        "type": "switch",
+        "z": "5afb1467026d4594",
+        "name": "Route by gesture",
+        "property": "gesture",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "updown",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "leftright",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "circle",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 3,
+        "x": 830,
+        "y": 260,
+        "wires": [
+            [
+                "0b94f17e0c2c1ac8",
+                "a18b67bb895b74eb"
+            ],
+            [
+                "db94e7f3aa3e425d",
+                "f04fda179120d308"
+            ],
+            [
+                "e42c0b49f66b9ae7",
+                "40905c5de9e8b2e2"
+            ]
+        ]
+    },
+    {
+        "id": "3c6fba7fc6c55af6",
+        "type": "function",
+        "z": "5afb1467026d4594",
+        "name": "Reps alert > 600",
+        "func": "var g = (msg.gesture || msg.topic || \"\").toLowerCase();\nvar count = Number(msg.payload);\nif (isNaN(count)) return null;\nvar LIMIT = 600;\nif (count >= LIMIT && g) {\n    return { payload: \"Alerte: trop de répétitions pour le geste \" + g + \" (\" + count + \")\" };\n}\nreturn null;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 830,
+        "y": 320,
+        "wires": [
+            [
+                "0731e7fb9580b849",
+                "04946b442ddc187d"
+            ]
+        ]
+    },
+    {
+        "id": "0b94f17e0c2c1ac8",
         "type": "ui_text",
-        "z": "d542a8ef1fe23ed5",
+        "z": "5afb1467026d4594",
         "group": "ui-group-main",
         "order": 2,
         "width": 0,
@@ -188,14 +270,14 @@
         "label": "Reps verticaux (updown)",
         "format": "{{msg.payload}}",
         "layout": "row-spread",
-        "x": 840,
-        "y": 190,
+        "x": 1110,
+        "y": 210,
         "wires": []
     },
     {
-        "id": "63753478de1c6f10",
+        "id": "a18b67bb895b74eb",
         "type": "ui_gauge",
-        "z": "d542a8ef1fe23ed5",
+        "z": "5afb1467026d4594",
         "name": "Gauge UpDown",
         "group": "ui-group-main",
         "order": 3,
@@ -206,7 +288,7 @@
         "label": "reps",
         "format": "{{msg.payload}}",
         "min": 0,
-        "max": 100,
+        "max": 600,
         "colors": [
             "#00b500",
             "#e6e600",
@@ -214,14 +296,14 @@
         ],
         "seg1": "",
         "seg2": "",
-        "x": 850,
-        "y": 230,
+        "x": 1120,
+        "y": 250,
         "wires": []
     },
     {
-        "id": "42cf8f123e5af742",
+        "id": "db94e7f3aa3e425d",
         "type": "ui_text",
-        "z": "d542a8ef1fe23ed5",
+        "z": "5afb1467026d4594",
         "group": "ui-group-main",
         "order": 4,
         "width": 0,
@@ -230,14 +312,14 @@
         "label": "Reps horizontaux (leftright)",
         "format": "{{msg.payload}}",
         "layout": "row-spread",
-        "x": 870,
-        "y": 280,
+        "x": 1140,
+        "y": 300,
         "wires": []
     },
     {
-        "id": "9a2d1f2090b39591",
+        "id": "f04fda179120d308",
         "type": "ui_gauge",
-        "z": "d542a8ef1fe23ed5",
+        "z": "5afb1467026d4594",
         "name": "Gauge LeftRight",
         "group": "ui-group-main",
         "order": 5,
@@ -248,7 +330,7 @@
         "label": "reps",
         "format": "{{msg.payload}}",
         "min": 0,
-        "max": 100,
+        "max": 600,
         "colors": [
             "#0077ff",
             "#e6e600",
@@ -256,14 +338,56 @@
         ],
         "seg1": "",
         "seg2": "",
-        "x": 880,
-        "y": 320,
+        "x": 1150,
+        "y": 340,
         "wires": []
     },
     {
-        "id": "399a643ad7b30c44",
+        "id": "e42c0b49f66b9ae7",
+        "type": "ui_text",
+        "z": "5afb1467026d4594",
+        "group": "ui-group-main",
+        "order": 6,
+        "width": 0,
+        "height": 0,
+        "name": "Reps Circle",
+        "label": "Reps circulaires (circle)",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 1160,
+        "y": 390,
+        "wires": []
+    },
+    {
+        "id": "40905c5de9e8b2e2",
+        "type": "ui_gauge",
+        "z": "5afb1467026d4594",
+        "name": "Gauge Circle",
+        "group": "ui-group-main",
+        "order": 7,
+        "width": 0,
+        "height": 0,
+        "gtype": "donut",
+        "title": "Circle",
+        "label": "reps",
+        "format": "{{msg.payload}}",
+        "min": 0,
+        "max": 600,
+        "colors": [
+            "#ff9900",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "x": 1170,
+        "y": 430,
+        "wires": []
+    },
+    {
+        "id": "81c138ec495ab429",
         "type": "debug",
-        "z": "d542a8ef1fe23ed5",
+        "z": "5afb1467026d4594",
         "name": "Movement JSON",
         "active": false,
         "tosidebar": true,
@@ -272,7 +396,38 @@
         "complete": "payload",
         "targetType": "msg",
         "x": 340,
-        "y": 270,
+        "y": 310,
+        "wires": []
+    },
+    {
+        "id": "0731e7fb9580b849",
+        "type": "ui_text",
+        "z": "5afb1467026d4594",
+        "group": "ui-group-main",
+        "order": 8,
+        "width": 0,
+        "height": 0,
+        "name": "Alertes",
+        "label": "ALERTE",
+        "format": "{{msg.payload}}",
+        "layout": "row-spread",
+        "x": 1130,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "04946b442ddc187d",
+        "type": "debug",
+        "z": "5afb1467026d4594",
+        "name": "Alerts debug",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 1140,
+        "y": 160,
         "wires": []
     },
     {
@@ -282,19 +437,26 @@
         "broker": "172.18.32.48",
         "port": "1883",
         "clientid": "nodered_penibilite",
+        "autoConnect": true,
         "usetls": false,
         "protocolVersion": "4",
         "keepalive": "60",
         "cleansession": true,
+        "autoUnsubscribe": true,
         "birthTopic": "",
         "birthQos": "0",
         "birthPayload": "",
+        "birthMsg": {},
         "closeTopic": "",
         "closeQos": "0",
         "closePayload": "",
+        "closeMsg": {},
         "willTopic": "",
         "willQos": "0",
-        "willPayload": ""
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
     },
     {
         "id": "ui-group-main",
@@ -314,7 +476,7 @@
         "order": 1
     },
     {
-        "id": "eb2dc70b073f33f1",
+        "id": "016ccfd5b595ca13",
         "type": "global-config",
         "env": [],
         "modules": {
